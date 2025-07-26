@@ -1,32 +1,21 @@
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { getQuestion, getQuestionAnswers } from "@/app/api/_lib/questions";
 import { getBulkLikeStatus } from "@/app/api/_lib/likes";
 import { QuestionDetail } from "@/components/questions/question-detail";
-import { headers } from "next/headers";
 
-// 모든 요청에서 페이지를 동적으로 렌더링
 export const dynamic = "force-dynamic";
-// 캐시를 사용하지 않음
-export const revalidate = 0;
 
-interface PageProps {
-  params: { id: string };
-}
-
-export default async function QuestionPage({ params }: PageProps) {
-  // 요청 헤더를 읽어서 캐시를 방지
-  headers();
-
+async function getQuestionData(questionId: string) {
   const [rawQuestion, rawAnswers, session] = await Promise.all([
-    getQuestion(params.id),
-    getQuestionAnswers(params.id),
+    getQuestion(questionId),
+    getQuestionAnswers(questionId),
     getServerSession(authOptions),
   ]);
 
   if (!rawQuestion) {
-    notFound();
+    return { question: null, answers: [], session, likedItems: null };
   }
 
   const question = {
@@ -52,14 +41,41 @@ export default async function QuestionPage({ params }: PageProps) {
     likedAnswerIds = likedItems.answers as Set<string>;
   }
 
+  return {
+    question,
+    answers,
+    session,
+    likedItems: { questions: likedQuestionIds, answers: likedAnswerIds },
+  };
+}
+
+export default async function QuestionPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const [resolvedParams, resolvedSearchParams] = await Promise.all([
+    params,
+    searchParams,
+  ]);
+  const { question, answers, session, likedItems } = await getQuestionData(
+    resolvedParams.id
+  );
+
+  if (!question) {
+    notFound();
+  }
+
   return (
     <QuestionDetail
       question={question}
       answers={answers}
       isOwner={session?.user?.id === question.author.id}
       isLoggedIn={!!session}
-      likedQuestionIds={likedQuestionIds}
-      likedAnswerIds={likedAnswerIds}
+      likedQuestionIds={likedItems?.questions ?? new Set()}
+      likedAnswerIds={likedItems?.answers ?? new Set()}
     />
   );
 }

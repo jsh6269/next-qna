@@ -1,47 +1,42 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import * as z from "zod";
+import { authOptions } from "@/lib/auth";
 
 const answerSchema = z.object({
-  content: z.string().min(1),
+  content: z.string().min(1, "내용을 입력해주세요."),
 });
 
-export async function POST(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, context: any) {
   try {
     const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email) {
-      return NextResponse.json(
-        { message: "로그인이 필요합니다" },
-        { status: 401 }
-      );
+    if (!session?.user?.id) {
+      return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const json = await request.json();
-    const body = answerSchema.parse(json);
+    const questionId = context.params.id;
+    const body = await request.json();
+    const validatedData = answerSchema.parse(body);
 
     const answer = await prisma.answer.create({
       data: {
-        content: body.content,
+        content: validatedData.content,
         question: {
           connect: {
-            id: params.id,
+            id: questionId,
           },
         },
         author: {
           connect: {
-            email: session.user.email,
+            id: session.user.id,
           },
         },
       },
       include: {
         author: {
           select: {
+            id: true,
             name: true,
             email: true,
           },
@@ -54,35 +49,25 @@ export async function POST(
       },
     });
 
-    return NextResponse.json(answer, { status: 201 });
+    return NextResponse.json(answer);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { message: "입력값이 올바르지 않습니다" },
-        { status: 400 }
-      );
+      return NextResponse.json({ errors: error.issues }, { status: 400 });
     }
-
-    console.error("Failed to create answer:", error);
-    return NextResponse.json(
-      { message: "답변 작성 중 오류가 발생했습니다" },
-      { status: 500 }
-    );
+    return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, context: any) {
   try {
     const answers = await prisma.answer.findMany({
       where: {
-        questionId: params.id,
+        questionId: context.params.id,
       },
       include: {
         author: {
           select: {
+            id: true,
             name: true,
             email: true,
           },
@@ -100,10 +85,6 @@ export async function GET(
 
     return NextResponse.json(answers);
   } catch (error) {
-    console.error("Failed to fetch answers:", error);
-    return NextResponse.json(
-      { message: "답변 목록을 불러오는 중 오류가 발생했습니다" },
-      { status: 500 }
-    );
+    return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

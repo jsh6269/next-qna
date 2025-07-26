@@ -2,16 +2,13 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 
 const updateAnswerSchema = z.object({
   content: z.string().min(1, "내용을 입력해주세요."),
 });
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: Request, context: any) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
@@ -19,7 +16,7 @@ export async function PATCH(
     }
 
     const answer = await prisma.answer.findUnique({
-      where: { id: params.id },
+      where: { id: context.params.id },
       select: { authorId: true },
     });
 
@@ -35,7 +32,7 @@ export async function PATCH(
     const validatedData = updateAnswerSchema.parse(body);
 
     const updatedAnswer = await prisma.answer.update({
-      where: { id: params.id },
+      where: { id: context.params.id },
       data: {
         content: validatedData.content,
       },
@@ -58,16 +55,13 @@ export async function PATCH(
     return NextResponse.json(updatedAnswer);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ errors: error.errors }, { status: 400 });
+      return NextResponse.json({ errors: error.issues }, { status: 400 });
     }
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: Request, context: any) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
@@ -75,7 +69,7 @@ export async function DELETE(
     }
 
     const answer = await prisma.answer.findUnique({
-      where: { id: params.id },
+      where: { id: context.params.id },
       select: { authorId: true },
     });
 
@@ -88,7 +82,7 @@ export async function DELETE(
     }
 
     await prisma.answer.delete({
-      where: { id: params.id },
+      where: { id: context.params.id },
     });
 
     return new NextResponse(null, { status: 204 });

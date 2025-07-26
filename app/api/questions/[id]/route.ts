@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 
 const updateQuestionSchema = z.object({
   title: z.string().min(1, "제목을 입력해주세요."),
@@ -13,10 +13,7 @@ const updateQuestionSchema = z.object({
     .max(5, "태그는 최대 5개까지 입력할 수 있습니다."),
 });
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: Request, context: any) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
@@ -24,7 +21,7 @@ export async function PATCH(
     }
 
     const question = await prisma.question.findUnique({
-      where: { id: params.id },
+      where: { id: context.params.id },
       select: { authorId: true },
     });
 
@@ -40,7 +37,7 @@ export async function PATCH(
     const validatedData = updateQuestionSchema.parse(body);
 
     const updatedQuestion = await prisma.question.update({
-      where: { id: params.id },
+      where: { id: context.params.id },
       data: {
         title: validatedData.title,
         content: validatedData.content,
@@ -77,16 +74,13 @@ export async function PATCH(
     return NextResponse.json(updatedQuestion);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ errors: error.errors }, { status: 400 });
+      return NextResponse.json({ errors: error.issues }, { status: 400 });
     }
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: Request, context: any) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
@@ -94,7 +88,7 @@ export async function DELETE(
     }
 
     const question = await prisma.question.findUnique({
-      where: { id: params.id },
+      where: { id: context.params.id },
       select: { authorId: true },
     });
 
@@ -110,7 +104,7 @@ export async function DELETE(
     await prisma.$transaction(async (tx) => {
       // 질문 삭제
       await tx.question.delete({
-        where: { id: params.id },
+        where: { id: context.params.id },
       });
 
       // 사용되지 않는 태그 삭제

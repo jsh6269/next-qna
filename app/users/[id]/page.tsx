@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import {
   getUserProfile,
   getUserQuestions,
@@ -15,11 +15,18 @@ interface PageProps {
   params: { id: string };
 }
 
-export default async function UserProfilePage({ params }: PageProps) {
+export default async function UserProfilePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const resolvedParams = await params;
   const [profile, questions, answers, session] = await Promise.all([
-    getUserProfile(params.id),
-    getUserQuestions(params.id),
-    getUserAnswers(params.id),
+    getUserProfile(resolvedParams.id),
+    getUserQuestions(resolvedParams.id),
+    getUserAnswers(resolvedParams.id),
     getServerSession(authOptions),
   ]);
 

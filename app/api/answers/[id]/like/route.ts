@@ -1,92 +1,75 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 
-export async function POST(
-  request: Request,
-  context: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, context: any) {
   try {
     const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email) {
-      return NextResponse.json(
-        { message: "로그인이 필요합니다" },
-        { status: 401 }
-      );
+    if (!session?.user?.id) {
+      return new NextResponse("Unauthorized", { status: 401 });
     }
+
+    const answerId = context.params.id;
+    const userId = session.user.id;
 
     const existingLike = await prisma.like.findUnique({
       where: {
         userId_answerId: {
-          userId: session.user.id,
-          answerId: String(context.params?.id),
+          userId,
+          answerId,
         },
       },
     });
 
     if (existingLike) {
-      return NextResponse.json(
-        { message: "이미 좋아요를 눌렀습니다" },
-        { status: 400 }
-      );
+      return new NextResponse("Already liked", { status: 400 });
     }
 
     await prisma.like.create({
       data: {
-        answer: {
-          connect: {
-            id: String(context.params?.id),
-          },
-        },
-        user: {
-          connect: {
-            email: session.user.email,
-          },
-        },
+        user: { connect: { id: userId } },
+        answer: { connect: { id: answerId } },
       },
     });
 
-    return NextResponse.json({ message: "좋아요!" }, { status: 201 });
+    return new NextResponse(null, { status: 204 });
   } catch (error) {
     console.error("Failed to like answer:", error);
-    return NextResponse.json(
-      { message: "좋아요 처리 중 오류가 발생했습니다" },
-      { status: 500 }
-    );
+    return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
 
-export async function DELETE(
-  request: Request,
-  context: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, context: any) {
   try {
     const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email) {
-      return NextResponse.json(
-        { message: "로그인이 필요합니다" },
-        { status: 401 }
-      );
+    if (!session?.user?.id) {
+      return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    await prisma.like.delete({
+    const answerId = context.params.id;
+    const userId = session.user.id;
+
+    const existingLike = await prisma.like.findUnique({
       where: {
         userId_answerId: {
-          userId: session.user.id,
-          answerId: String(context.params?.id),
+          userId,
+          answerId,
         },
       },
     });
 
-    return NextResponse.json({ message: "좋아요 취소" });
+    if (!existingLike) {
+      return new NextResponse("Like not found", { status: 404 });
+    }
+
+    await prisma.like.delete({
+      where: { id: existingLike.id },
+    });
+
+    return new NextResponse(null, { status: 204 });
   } catch (error) {
     console.error("Failed to unlike answer:", error);
-    return NextResponse.json(
-      { message: "좋아요 취소 중 오류가 발생했습니다" },
-      { status: 500 }
-    );
+    return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
