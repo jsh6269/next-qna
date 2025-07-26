@@ -2,19 +2,33 @@
 
 Next.js로 만든 Q&A 플랫폼입니다.
 
-## Notes
+## Vercel + Supabase
+vercel + supabase 배포 시 참고할 만한 사항
+### Set Supabase (with local commands)
 ```
-# Please Set: vercel > Settings > Environment variables
-NEXTAUTH_SECRET="generate_random_auth_secret"
-# vercel > Settings > Domains
-NEXTAUTH_URL="your_public_domain"
-# Supabase > your_project > connect
+# Set local .env
+#   you can find your supabase postgresql url from
+#   "Supabase > your_project > connect > Session pooler"
 DATABASE_URL="Supabase postgresql: Session pooler URL"
-```
-```
+
+# Push & Set db tables on Supabase
 npx prisma generate
 npx prisma db push
 ```
+### Set Vercel
+```
+# Set Project Build Command
+#   "Vercel > Settings > Build and Deployment > Build Command"
+npm install && npx prisma generate && npm run build
+
+# Please Set: "vercel > Settings > Environment variables"
+#   you can find your domain from "vercel > Settings > Domains"
+#   you can find your supabase postgresql url from "Supabase > your_project > connect > Session pooler"
+NEXTAUTH_SECRET="generate_random_auth_secret"
+NEXTAUTH_URL="your_public_domain"
+DATABASE_URL="Supabase postgresql: Session pooler URL"
+```
+
 ## 기능
 
 - 회원가입/로그인
