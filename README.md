@@ -2,6 +2,19 @@
 
 Next.js로 만든 Q&A 플랫폼입니다.
 
+## Notes
+```
+# Please Set: vercel > Settings > Environment variables
+NEXTAUTH_SECRET="generate_random_auth_secret"
+# vercel > Settings > Domains
+NEXTAUTH_URL="your_public_domain"
+# Supabase > your_project > connect
+DATABASE_URL="Supabase postgresql: Session pooler URL"
+```
+```
+npx prisma generate
+npx prisma db push
+```
 ## 기능
 
 - 회원가입/로그인
@@ -84,8 +97,7 @@ Vercel Postgres를 사용하려면:
 ```prisma
 datasource db {
   provider = "postgresql"
-  url      = env("POSTGRES_PRISMA_URL")
-  directUrl = env("POSTGRES_URL_NON_POOLING")
+  url      = env("DATABASE_URL")
 }
 ```
 
