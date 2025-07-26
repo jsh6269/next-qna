@@ -25,3 +25,10 @@ npx prisma db push
 npm install react-hook-form @hookform/resolvers zod clsx tailwind-merge
 
 npm install date-fns
+
+.env
+```
+NEXTAUTH_SECRET="YOUR_NEXT_AUTH_SECRET"
+NEXTAUTH_URL="http://localhost:3000"
+```
+https://auth-secret-gen.vercel.app/

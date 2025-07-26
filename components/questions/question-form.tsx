@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -24,6 +25,7 @@ type FormValues = z.infer<typeof questionFormSchema>;
 
 export function QuestionForm() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -60,6 +62,7 @@ export function QuestionForm() {
           content: data.content,
           tags,
         }),
+        credentials: "include", // 쿠키를 포함하여 요청
       });
 
       if (!response.ok) {
@@ -79,6 +82,12 @@ export function QuestionForm() {
       setIsLoading(false);
     }
   };
+
+  // 로그인 상태가 아니면 로그인 페이지로 리다이렉트
+  if (status === "unauthenticated") {
+    router.push("/auth/signin");
+    return null;
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">

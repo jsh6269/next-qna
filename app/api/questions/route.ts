@@ -5,8 +5,8 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import * as z from "zod";
 
 const questionSchema = z.object({
-  title: z.string().min(5).max(100),
-  content: z.string().min(20).max(10000),
+  title: z.string().min(2).max(100),
+  content: z.string().min(1).max(10000),
   tags: z.array(z.string()),
 });
 
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user) {
+    if (!session?.user?.email) {
       return NextResponse.json(
         { message: "로그인이 필요합니다" },
         { status: 401 }
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
         content: body.content,
         author: {
           connect: {
-            email: session.user.email!,
+            email: session.user.email,
           },
         },
         tags: {
@@ -38,6 +38,13 @@ export async function POST(request: Request) {
             where: { name: tag },
             create: { name: tag },
           })),
+        },
+      },
+      include: {
+        tags: {
+          select: {
+            name: true,
+          },
         },
       },
     });
