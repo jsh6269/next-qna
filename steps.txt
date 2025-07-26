@@ -12,3 +12,4 @@ Ok to proceed? (y) y
 √ Would you like to customize the import alias (`@/*` by default)? ... No / Yes
 Creating a new Next.js app in C:\Users\suhan\OneDrive\바탕 화면\next\my-app.
 
+npm run dev
