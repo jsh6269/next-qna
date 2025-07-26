@@ -2,7 +2,7 @@ import SignInForm from "@/components/auth/signin-form";
 
 export default function SignInPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-start pt-24 sm:pt-32 justify-center px-4">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <h1 className="text-2xl font-bold tracking-tight">로그인</h1>
@@ -14,4 +14,4 @@ export default function SignInPage() {
       </div>
     </div>
   );
-} 
+}
