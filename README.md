@@ -4,6 +4,7 @@ Next.js로 만든 Q&A 플랫폼입니다.
 
 ## Vercel + Supabase
 vercel + supabase 배포 시 참고할 만한 사항
+
 ### Set Supabase (with local commands)
 ```
 # Set local .env
