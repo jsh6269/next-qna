@@ -6,19 +6,18 @@ import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { AnswerForm } from "@/components/questions/answer-form";
 import { AnswerList } from "@/components/questions/answer-list";
+import { LikeButton } from "@/components/like-button";
 
-interface QuestionPageProps {
-  params: {
-    id: string;
-  };
+export const dynamic = "force-dynamic";
+
+interface PageProps {
+  params: { id: string };
 }
 
-export default async function QuestionPage({ params }: QuestionPageProps) {
+async function getQuestionData(questionId: string) {
   const [question, answers, session] = await Promise.all([
     prisma.question.findUnique({
-      where: {
-        id: params.id,
-      },
+      where: { id: questionId },
       include: {
         author: {
           select: {
@@ -40,9 +39,7 @@ export default async function QuestionPage({ params }: QuestionPageProps) {
       },
     }),
     prisma.answer.findMany({
-      where: {
-        questionId: params.id,
-      },
+      where: { questionId },
       include: {
         author: {
           select: {
@@ -62,6 +59,12 @@ export default async function QuestionPage({ params }: QuestionPageProps) {
     }),
     getServerSession(authOptions),
   ]);
+
+  return { question, answers, session };
+}
+
+export default async function QuestionPage({ params }: PageProps) {
+  const { question, answers, session } = await getQuestionData(params.id);
 
   if (!question) {
     notFound();
@@ -117,22 +120,12 @@ export default async function QuestionPage({ params }: QuestionPageProps) {
             </svg>
             답변 {question._count.answers}개
           </span>
-          <span className="flex items-center gap-1">
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-              />
-            </svg>
-            좋아요 {question._count.likes}개
-          </span>
+          <LikeButton
+            itemId={question.id}
+            itemType="question"
+            initialLikeCount={question._count.likes}
+            initialIsLiked={false}
+          />
         </div>
 
         <div className="space-y-8">
@@ -141,7 +134,7 @@ export default async function QuestionPage({ params }: QuestionPageProps) {
           </h2>
           <AnswerList answers={answers} />
           {session ? (
-            <AnswerForm questionId={params.id} />
+            <AnswerForm questionId={question.id} />
           ) : (
             <div className="text-center py-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <p className="text-gray-600 dark:text-gray-300">
