@@ -14,6 +14,7 @@ export async function getQuestion(id: string) {
       },
       tags: {
         select: {
+          id: true,
           name: true,
         },
       },

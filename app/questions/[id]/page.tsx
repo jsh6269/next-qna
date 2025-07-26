@@ -3,26 +3,30 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { getQuestion, getQuestionAnswers } from "@/app/api/_lib/questions";
 import { getBulkLikeStatus } from "@/app/api/_lib/likes";
-import { formatRelativeTime } from "@/lib/utils/date";
-import { AnswerForm } from "@/components/questions/answer-form";
-import { AnswerList } from "@/components/questions/answer-list";
-import { LikeButton } from "@/components/like-button";
+import { QuestionDetail } from "@/components/questions/question-detail";
+import { headers } from "next/headers";
 
+// 모든 요청에서 페이지를 동적으로 렌더링
 export const dynamic = "force-dynamic";
+// 캐시를 사용하지 않음
+export const revalidate = 0;
 
 interface PageProps {
   params: { id: string };
 }
 
-async function getQuestionData(questionId: string) {
+export default async function QuestionPage({ params }: PageProps) {
+  // 요청 헤더를 읽어서 캐시를 방지
+  headers();
+
   const [rawQuestion, rawAnswers, session] = await Promise.all([
-    getQuestion(questionId),
-    getQuestionAnswers(questionId),
+    getQuestion(params.id),
+    getQuestionAnswers(params.id),
     getServerSession(authOptions),
   ]);
 
   if (!rawQuestion) {
-    return { question: null, answers: [], session, likedItems: null };
+    notFound();
   }
 
   const question = {
@@ -35,101 +39,27 @@ async function getQuestionData(questionId: string) {
     createdAt: new Date(answer.createdAt),
   }));
 
-  let likedItems = null;
+  let likedQuestionIds = new Set<string>();
+  let likedAnswerIds = new Set<string>();
+
   if (session?.user?.id) {
-    likedItems = await getBulkLikeStatus({
+    const likedItems = await getBulkLikeStatus({
       userId: session.user.id,
       questionIds: [question.id],
       answerIds: answers.map((answer) => answer.id),
     });
-  }
-
-  return { question, answers, session, likedItems };
-}
-
-export default async function QuestionPage({ params }: PageProps) {
-  const { question, answers, session, likedItems } = await getQuestionData(
-    params.id
-  );
-
-  if (!question) {
-    notFound();
+    likedQuestionIds = likedItems.questions as Set<string>;
+    likedAnswerIds = likedItems.answers as Set<string>;
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-4">{question.title}</h1>
-
-        <div className="flex items-center text-sm text-gray-500 mb-6">
-          <span>{question.author.name || question.author.email}</span>
-          <span className="mx-2">•</span>
-          <time dateTime={question.createdAt.toISOString()}>
-            {formatRelativeTime(question.createdAt)}
-          </time>
-        </div>
-
-        <div className="prose prose-sm sm:prose lg:prose-lg dark:prose-invert max-w-none mb-8">
-          {question.content.split("\n").map((paragraph, index) => (
-            <p key={index}>{paragraph}</p>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap gap-2 mb-8">
-          {question.tags.map((tag) => (
-            <span
-              key={tag.name}
-              className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-            >
-              {tag.name}
-            </span>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-4 text-sm text-gray-500 mb-12">
-          <span className="flex items-center gap-1">
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-              />
-            </svg>
-            답변 {question._count.answers}개
-          </span>
-          <LikeButton
-            itemId={question.id}
-            itemType="question"
-            initialLikeCount={question._count.likes}
-            initialIsLiked={likedItems?.questions.has(question.id) ?? false}
-          />
-        </div>
-
-        <div className="space-y-8">
-          <h2 className="text-xl font-semibold">
-            {question._count.answers}개의 답변
-          </h2>
-          <AnswerList
-            answers={answers}
-            likedAnswerIds={(likedItems?.answers as Set<string>) ?? new Set()}
-          />
-          {session ? (
-            <AnswerForm questionId={question.id} />
-          ) : (
-            <div className="text-center py-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <p className="text-gray-600 dark:text-gray-300">
-                답변을 작성하려면 로그인이 필요합니다
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+    <QuestionDetail
+      question={question}
+      answers={answers}
+      isOwner={session?.user?.id === question.author.id}
+      isLoggedIn={!!session}
+      likedQuestionIds={likedQuestionIds}
+      likedAnswerIds={likedAnswerIds}
+    />
   );
 }
