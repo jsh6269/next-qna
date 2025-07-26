@@ -1,7 +1,11 @@
 import { notFound } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
+import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { AnswerForm } from "@/components/questions/answer-form";
+import { AnswerList } from "@/components/questions/answer-list";
 
 interface QuestionPageProps {
   params: {
@@ -10,30 +14,54 @@ interface QuestionPageProps {
 }
 
 export default async function QuestionPage({ params }: QuestionPageProps) {
-  const question = await prisma.question.findUnique({
-    where: {
-      id: params.id,
-    },
-    include: {
-      author: {
-        select: {
-          name: true,
-          email: true,
+  const [question, answers, session] = await Promise.all([
+    prisma.question.findUnique({
+      where: {
+        id: params.id,
+      },
+      include: {
+        author: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+        tags: {
+          select: {
+            name: true,
+          },
+        },
+        _count: {
+          select: {
+            answers: true,
+            likes: true,
+          },
         },
       },
-      tags: {
-        select: {
-          name: true,
+    }),
+    prisma.answer.findMany({
+      where: {
+        questionId: params.id,
+      },
+      include: {
+        author: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+        _count: {
+          select: {
+            likes: true,
+          },
         },
       },
-      _count: {
-        select: {
-          answers: true,
-          likes: true,
-        },
+      orderBy: {
+        createdAt: "desc",
       },
-    },
-  });
+    }),
+    getServerSession(authOptions),
+  ]);
 
   if (!question) {
     notFound();
@@ -43,7 +71,7 @@ export default async function QuestionPage({ params }: QuestionPageProps) {
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-4">{question.title}</h1>
-        
+
         <div className="flex items-center text-sm text-gray-500 mb-6">
           <span>{question.author.name || question.author.email}</span>
           <span className="mx-2">•</span>
@@ -72,7 +100,7 @@ export default async function QuestionPage({ params }: QuestionPageProps) {
           ))}
         </div>
 
-        <div className="flex items-center gap-4 text-sm text-gray-500">
+        <div className="flex items-center gap-4 text-sm text-gray-500 mb-12">
           <span className="flex items-center gap-1">
             <svg
               className="h-4 w-4"
@@ -106,7 +134,23 @@ export default async function QuestionPage({ params }: QuestionPageProps) {
             좋아요 {question._count.likes}개
           </span>
         </div>
+
+        <div className="space-y-8">
+          <h2 className="text-xl font-semibold">
+            {question._count.answers}개의 답변
+          </h2>
+          <AnswerList answers={answers} />
+          {session ? (
+            <AnswerForm questionId={params.id} />
+          ) : (
+            <div className="text-center py-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <p className="text-gray-600 dark:text-gray-300">
+                답변을 작성하려면 로그인이 필요합니다
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
-} 
+}
