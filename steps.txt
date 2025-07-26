@@ -21,3 +21,5 @@ npm install -D @types/bcryptjs
 
 npx prisma generate
 npx prisma db push
+
+npm install react-hook-form @hookform/resolvers zod clsx tailwind-merge
