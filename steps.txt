@@ -13,3 +13,11 @@ Ok to proceed? (y) y
 Creating a new Next.js app in C:\Users\suhan\OneDrive\바탕 화면\next\my-app.
 
 npm run dev
+
+npm install @prisma/client next-auth @types/next-auth prisma
+
+npm install bcryptjs @auth/prisma-adapter
+npm install -D @types/bcryptjs
+
+npx prisma generate
+npx prisma db push
