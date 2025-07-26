@@ -1,24 +1,12 @@
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
+import { Question } from "@/types/question";
 
-interface QuestionCardProps {
-  id: string;
-  title: string;
-  content: string;
-  author: {
-    name: string | null;
-    email: string;
-  };
-  createdAt: Date;
-  _count: {
-    answers: number;
-    likes: number;
-  };
-  tags: {
-    name: string;
-  }[];
-}
+type QuestionCardProps = Pick<
+  Question,
+  "id" | "title" | "content" | "author" | "createdAt" | "_count" | "tags"
+>;
 
 export function QuestionCard({
   id,

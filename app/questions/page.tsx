@@ -5,31 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { QuestionCard } from "@/components/questions/question-card";
 import { Button } from "@/components/ui/button";
-
-interface Question {
-  id: string;
-  title: string;
-  content: string;
-  createdAt: Date;
-  author: {
-    name: string | null;
-    email: string;
-  };
-  tags: {
-    name: string;
-  }[];
-  _count: {
-    answers: number;
-    likes: number;
-  };
-}
-
-interface Tag {
-  name: string;
-  _count: {
-    questions: number;
-  };
-}
+import { Question } from "@/types/question";
+import { Tag } from "@/types/tag";
 
 export default function QuestionsPage() {
   const searchParams = useSearchParams();
