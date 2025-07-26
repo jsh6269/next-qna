@@ -34,6 +34,52 @@ export async function getLikeStatus({
   return null;
 }
 
+export async function getBulkLikeStatus({
+  userId,
+  questionIds = [],
+  answerIds = [],
+}: {
+  userId: string;
+  questionIds?: string[];
+  answerIds?: string[];
+}) {
+  const [questionLikes, answerLikes] = await Promise.all([
+    questionIds.length > 0
+      ? prisma.like.findMany({
+          where: {
+            userId,
+            questionId: {
+              in: questionIds,
+            },
+          },
+          select: {
+            questionId: true,
+          },
+        })
+      : [],
+    answerIds.length > 0
+      ? prisma.like.findMany({
+          where: {
+            userId,
+            answerId: {
+              in: answerIds,
+            },
+          },
+          select: {
+            answerId: true,
+          },
+        })
+      : [],
+  ]);
+
+  return {
+    questions: new Set(
+      questionLikes.map((like) => like.questionId).filter(Boolean)
+    ),
+    answers: new Set(answerLikes.map((like) => like.answerId).filter(Boolean)),
+  };
+}
+
 export async function toggleLike({
   userId,
   questionId,

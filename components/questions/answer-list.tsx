@@ -4,9 +4,10 @@ import type { Answer } from "@/types";
 
 interface AnswerListProps {
   answers: Answer[];
+  likedAnswerIds: Set<string>;
 }
 
-export function AnswerList({ answers }: AnswerListProps) {
+export function AnswerList({ answers, likedAnswerIds }: AnswerListProps) {
   return (
     <div className="space-y-6">
       {answers.map((answer) => (
@@ -33,7 +34,7 @@ export function AnswerList({ answers }: AnswerListProps) {
               itemId={answer.id}
               itemType="answer"
               initialLikeCount={answer._count.likes}
-              initialIsLiked={false} // TODO: Add isLiked check
+              initialIsLiked={likedAnswerIds.has(answer.id)}
             />
           </div>
         </div>

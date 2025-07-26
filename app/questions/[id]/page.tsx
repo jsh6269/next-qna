@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { getQuestion, getQuestionAnswers } from "@/app/api/_lib/questions";
+import { getBulkLikeStatus } from "@/app/api/_lib/likes";
 import { formatRelativeTime } from "@/lib/utils/date";
 import { AnswerForm } from "@/components/questions/answer-form";
 import { AnswerList } from "@/components/questions/answer-list";
@@ -21,7 +22,7 @@ async function getQuestionData(questionId: string) {
   ]);
 
   if (!rawQuestion) {
-    return { question: null, answers: [], session };
+    return { question: null, answers: [], session, likedItems: null };
   }
 
   const question = {
@@ -34,11 +35,22 @@ async function getQuestionData(questionId: string) {
     createdAt: new Date(answer.createdAt),
   }));
 
-  return { question, answers, session };
+  let likedItems = null;
+  if (session?.user?.id) {
+    likedItems = await getBulkLikeStatus({
+      userId: session.user.id,
+      questionIds: [question.id],
+      answerIds: answers.map((answer) => answer.id),
+    });
+  }
+
+  return { question, answers, session, likedItems };
 }
 
 export default async function QuestionPage({ params }: PageProps) {
-  const { question, answers, session } = await getQuestionData(params.id);
+  const { question, answers, session, likedItems } = await getQuestionData(
+    params.id
+  );
 
   if (!question) {
     notFound();
@@ -95,7 +107,7 @@ export default async function QuestionPage({ params }: PageProps) {
             itemId={question.id}
             itemType="question"
             initialLikeCount={question._count.likes}
-            initialIsLiked={false}
+            initialIsLiked={likedItems?.questions.has(question.id) ?? false}
           />
         </div>
 
@@ -103,7 +115,10 @@ export default async function QuestionPage({ params }: PageProps) {
           <h2 className="text-xl font-semibold">
             {question._count.answers}개의 답변
           </h2>
-          <AnswerList answers={answers} />
+          <AnswerList
+            answers={answers}
+            likedAnswerIds={(likedItems?.answers as Set<string>) ?? new Set()}
+          />
           {session ? (
             <AnswerForm questionId={question.id} />
           ) : (
