@@ -7,6 +7,7 @@ export async function getQuestion(id: string) {
     include: {
       author: {
         select: {
+          id: true,
           name: true,
           email: true,
         },
@@ -44,6 +45,7 @@ export async function getQuestions(options?: {
     include: {
       author: {
         select: {
+          id: true,
           name: true,
           email: true,
         },
@@ -74,6 +76,7 @@ export async function getQuestionAnswers(questionId: string) {
     include: {
       author: {
         select: {
+          id: true,
           name: true,
           email: true,
         },
@@ -120,4 +123,4 @@ export async function createQuestion(data: {
       },
     },
   });
-} 
+}

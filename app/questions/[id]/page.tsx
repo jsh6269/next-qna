@@ -14,11 +14,25 @@ interface PageProps {
 }
 
 async function getQuestionData(questionId: string) {
-  const [question, answers, session] = await Promise.all([
+  const [rawQuestion, rawAnswers, session] = await Promise.all([
     getQuestion(questionId),
     getQuestionAnswers(questionId),
     getServerSession(authOptions),
   ]);
+
+  if (!rawQuestion) {
+    return { question: null, answers: [], session };
+  }
+
+  const question = {
+    ...rawQuestion,
+    createdAt: new Date(rawQuestion.createdAt),
+  };
+
+  const answers = rawAnswers.map((answer) => ({
+    ...answer,
+    createdAt: new Date(answer.createdAt),
+  }));
 
   return { question, answers, session };
 }

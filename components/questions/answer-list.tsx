@@ -1,33 +1,12 @@
-import { formatDistanceToNow } from "date-fns";
-import { ko } from "date-fns/locale";
+import { formatRelativeTime } from "@/lib/utils/date";
 import { LikeButton } from "@/components/like-button";
-
-interface Answer {
-  id: string;
-  content: string;
-  createdAt: Date;
-  author: {
-    name: string | null;
-    email: string;
-  };
-  _count: {
-    likes: number;
-  };
-}
+import type { Answer } from "@/types";
 
 interface AnswerListProps {
   answers: Answer[];
 }
 
 export function AnswerList({ answers }: AnswerListProps) {
-  if (answers.length === 0) {
-    return (
-      <div className="text-center py-12 text-gray-500">
-        아직 답변이 없습니다. 첫 번째 답변을 작성해보세요!
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       {answers.map((answer) => (
@@ -46,10 +25,7 @@ export function AnswerList({ answers }: AnswerListProps) {
               <span>{answer.author.name || answer.author.email}</span>
               <span>•</span>
               <time dateTime={answer.createdAt.toISOString()}>
-                {formatDistanceToNow(answer.createdAt, {
-                  addSuffix: true,
-                  locale: ko,
-                })}
+                {formatRelativeTime(answer.createdAt)}
               </time>
             </div>
 
