@@ -1,9 +1,8 @@
 import { notFound } from "next/navigation";
-import { formatDistanceToNow } from "date-fns";
-import { ko } from "date-fns/locale";
 import { getServerSession } from "next-auth";
-import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { getQuestion, getQuestionAnswers } from "@/app/api/_lib/questions";
+import { formatRelativeTime } from "@/lib/utils/date";
 import { AnswerForm } from "@/components/questions/answer-form";
 import { AnswerList } from "@/components/questions/answer-list";
 import { LikeButton } from "@/components/like-button";
@@ -16,47 +15,8 @@ interface PageProps {
 
 async function getQuestionData(questionId: string) {
   const [question, answers, session] = await Promise.all([
-    prisma.question.findUnique({
-      where: { id: questionId },
-      include: {
-        author: {
-          select: {
-            name: true,
-            email: true,
-          },
-        },
-        tags: {
-          select: {
-            name: true,
-          },
-        },
-        _count: {
-          select: {
-            answers: true,
-            likes: true,
-          },
-        },
-      },
-    }),
-    prisma.answer.findMany({
-      where: { questionId },
-      include: {
-        author: {
-          select: {
-            name: true,
-            email: true,
-          },
-        },
-        _count: {
-          select: {
-            likes: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    }),
+    getQuestion(questionId),
+    getQuestionAnswers(questionId),
     getServerSession(authOptions),
   ]);
 
@@ -79,10 +39,7 @@ export default async function QuestionPage({ params }: PageProps) {
           <span>{question.author.name || question.author.email}</span>
           <span className="mx-2">•</span>
           <time dateTime={question.createdAt.toISOString()}>
-            {formatDistanceToNow(question.createdAt, {
-              addSuffix: true,
-              locale: ko,
-            })}
+            {formatRelativeTime(question.createdAt)}
           </time>
         </div>
 

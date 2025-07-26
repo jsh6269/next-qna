@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { formatDistanceToNow } from "date-fns";
-import { ko } from "date-fns/locale";
-import { Question } from "@/types/question";
+import { formatRelativeTime } from "@/lib/utils/date";
+import { Question } from "@/types";
 
 type QuestionCardProps = Pick<
   Question,
@@ -77,7 +76,7 @@ export function QuestionCard({
           <span>{author.name || author.email}</span>
           <span>•</span>
           <time dateTime={createdAt.toISOString()}>
-            {formatDistanceToNow(createdAt, { addSuffix: true, locale: ko })}
+            {formatRelativeTime(createdAt)}
           </time>
         </div>
       </div>

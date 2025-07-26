@@ -5,8 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { QuestionCard } from "@/components/questions/question-card";
 import { Button } from "@/components/ui/button";
-import { Question } from "@/types/question";
-import { Tag } from "@/types/tag";
+import { Question, Tag } from "@/types";
 
 export default function QuestionsPage() {
   const searchParams = useSearchParams();
@@ -95,7 +94,7 @@ export default function QuestionsPage() {
                       : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
                   }`}
                 >
-                  {tag.name} ({tag._count.questions})
+                  {tag.name} ({tag._count?.questions || 0})
                 </Link>
               ))}
             </div>
