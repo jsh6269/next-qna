@@ -106,8 +106,21 @@ export async function DELETE(
       return new NextResponse("Forbidden", { status: 403 });
     }
 
-    await prisma.question.delete({
-      where: { id: params.id },
+    // 트랜잭션으로 질문 삭제와 태그 정리를 함께 처리
+    await prisma.$transaction(async (tx) => {
+      // 질문 삭제
+      await tx.question.delete({
+        where: { id: params.id },
+      });
+
+      // 사용되지 않는 태그 삭제
+      await tx.tag.deleteMany({
+        where: {
+          questions: {
+            none: {},
+          },
+        },
+      });
     });
 
     return new NextResponse(null, { status: 204 });

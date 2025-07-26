@@ -73,7 +73,9 @@ export function QuestionCard({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span>{author.name || author.email}</span>
+          <Link href={`/users/${author.id}`} className="hover:text-blue-500">
+            {author.name || author.email}
+          </Link>
           <span>•</span>
           <time dateTime={createdAt.toISOString()}>
             {formatRelativeTime(createdAt)}
